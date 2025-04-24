@@ -1,0 +1,2 @@
+# generatorCode
+Simplify work
