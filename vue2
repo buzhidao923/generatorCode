@@ -1,0 +1,233 @@
+form="%fillmenu&name=form&default=false&opt=true&opt=false&isCheck=1%"
+view="%fillmenu&name=view&default=false&opt=true&opt=false&isCheck=1%"
+table="%fillmenu&name=table&default=false&opt=true&opt=false&isCheck=1%"
+console.log(form )
+console.log(view)
+console.log(table)
+template="<template>"+
+			"    <div class=\"app-container\">"+
+			"        <el-form :model=\"queryParams\" ref=\"queryForm\" :inline=\"true\" v-show=\"showSearch\" label-width=\"8rem\">"+
+			"            <el-form-item label=\"企业名称\" prop=\"mc\">"+
+			"                <el-input v-model=\"queryParams.mc\" placeholder=\"请输入企业名称\" clearable @keyup.enter.native=\"handleQuery\" />"+
+			"            </el-form-item>"+
+			"            <el-form-item>"+
+			"                <el-button type=\"primary\" icon=\"el-icon-search\" @click=\"handleQuery\">搜索</el-button>"+
+			"                <el-button icon=\"el-icon-refresh\" @click=\"resetQuery\">重置</el-button>"+
+			"            </el-form-item>"+
+			"            <el-row :gutter=\"10\" class=\"mb8\">"+
+			"                <el-col :span=\"1.5\">"+
+			"                    <el-button type=\"primary\" plain icon=\"el-icon-plus\" @click=\"handleAdd\""+
+			"                        v-hasPermi=\"['yanglaojigou:shexiangtou:add']\">新增</el-button>"+
+			"                </el-col>"+
+			"                <!-- <el-col :span=\"1.5\">"+
+			"                    <el-button type=\"success\" plain icon=\"el-icon-plus\" :disabled=\"!(selects && selects.length > 0)\""+
+			"                        v-hasPermi=\"['enterprisebase:yanglaojigou:semacodeById']\""+
+			"                        @click=\"handleSemacode(selects, true)\">复制</el-button>"+
+			"                </el-col> -->"+
+			"                <el-col :span=\"1.5\">"+
+			"                    <el-button type=\"success\" plain icon=\"el-icon-plus\" @click=\"handleUpdate\" :disabled=\"single\""+
+			"                        v-hasPermi=\"['yanglaojigou:shexiangtou:edit']\">修改</el-button>"+
+			"                </el-col>"+
+			"                <el-col :span=\"1.5\">"+
+			"                    <el-button type=\"danger\" plain icon=\"el-icon-delete\" :disabled=\"multiple\" @click=\"handleDelete\""+
+			"                        v-hasPermi=\"['yanglaojigou:shexiangtou:delete']\">删除</el-button>"+
+			"                </el-col>"+
+			"                <!-- <el-col :span=\"1.5\">"+
+			"                    <el-button type=\"success\" plain icon=\"el-icon-plus\""+
+			"                        v-hasPermi=\"['enterprisebase:yanglaojigou:semacodeByXzqh']\""+
+			"                        @click=\"handleSemacode(selects, false)\">导入</el-button>"+
+			"                </el-col>"+
+			"                <el-col :span=\"1.5\">"+
+			"                    <el-button type=\"success\" plain icon=\"el-icon-plus\""+
+			"                        v-hasPermi=\"['enterprisebase:yanglaojigou:semacodeByXzqh']\""+
+			"                        @click=\"handleSemacode(selects, false)\">导出</el-button>"+
+			"                </el-col> -->"+
+			"                <right-toolbar :showSearch.sync=\"showSearch\" @queryTable=\"getList\" :columns=\"columns\"></right-toolbar>"+
+			"            </el-row>"+
+			"        </el-form>"+
+			"        <el-table v-loading=\"loading\" :data=\"shexiangtouList\" :stripe=\"true\" border"+
+			"            @selection-change=\"handleSelectionChange\" class=\"tableCss\">"+
+			"            <el-table-column type=\"selection\" width=\"55\" align=\"center\" :selectable=\"checkOption\" />"+
+			"            <el-table-column label=\"序号\" width=\"70\">"+
+			"                <template slot-scope=\"scope\">"+
+			"                    {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.index + 1 }}"+
+			"                </template>"+
+			"            </el-table-column>"+
+			"            <!-- <el-table-column label=\"法人\" align=\"center\">"+
+			"                <template slot-scope=\"scope\">"+
+			"                    <span>{{ scope.row.frxm + '-' + scope.row.frdh }}</span>"+
+			"                </template>"+
+			"            </el-table-column> -->"+
+			"            <el-table-column label=\"企业名称\" align=\"center\"></el-table-column>"+
+			"            <el-table-column label=\"最近上线时间\" align=\"center\""+
+			"                :formatter=\"(row)=>{return parseTime(new Date(row.lastonlinetime));}\"></el-table-column>"+
+			"            <el-table-column label=\"操作\" align=\"center\">"+
+			"                <template slot-scope=\"scope\">"+
+			"                    <el-button size=\"mini\" type=\"text\" icon=\"el-icon-search\""+
+			"                        v-hasPermi=\"['yanglaojigou:shexiangtou:update','yanglaojigou:shexiangtou:query']\""+
+			"                        @click=\"handleView(scope.row)\">查看"+
+			"                    </el-button>"+
+			"                    <el-button @click=\"handleUpdate(scope.row)\" icon=\"el-icon-edit\" size=\"mini\" type=\"text\""+
+			"                        v-hasPermi=\"['yanglaojigou:shexiangtou:edit']\">修改"+
+			"                    </el-button>"+
+			"                    <el-button @click=\"handleDelete(scope.row)\" icon=\"el-icon-delete\" size=\"mini\" type=\"text\""+
+			"                        v-hasPermi=\"['yanglaojigou:shexiangtou:delete']\">删除"+
+			"                    </el-button>"+
+			"                </template>"+
+			"            </el-table-column>"+
+			"        </el-table>"+
+			""+
+			"        <pagination v-show=\"total > 0\" :total=\"total\" :page.sync=\"queryParams.pageNum\""+
+			"            :limit.sync=\"queryParams.pageSize\" @pagination=\"getList\" />"+
+			"    </div>"+
+			"</template>"+
+			"<script>"+
+			"    export default {"+
+			"        name: \"\","+
+			"        props: [],"+
+			"        components: {"+
+			"        },"+
+			"        data() {"+
+			"            return {"+
+			"                // 遮罩层"+
+			"                loading: true,"+
+			"                // 选中数组"+
+			"                ids: [],"+
+			"                //选中的名称"+
+			"                nickNames: [],"+
+			"                // 非单个禁用"+
+			"                single: true,"+
+			"                // 非多个禁用"+
+			"                multiple: true,"+
+			"                // 显示搜索条件"+
+			"                showSearch: true,"+
+			"                // 总条数"+
+			"                total: 0,"+
+			"                //选中集合"+
+			"                selects: [],"+
+			"                shexiangtouList: [],"+
+			"                // 列信息"+
+			"                columns: ["+
+			"                    // { key: 1, label: '养老机构名称', visible: true },"+
+			"                ],"+
+			"                // 查询参数"+
+			"                queryParams: {"+
+			"                    pageNum: 1,"+
+			"                    pageSize: 10,"+
+			"                },"+
+			"            };"+
+			"        },"+
+			"        created() {"+
+			"            this.getList();"+
+			"        },"+
+			"        watch: {"+
+			"            // imgList: {"+
+			"            //     handler: function (newV, oldV) {"+
+			"            //     }"+
+			"            // },"+
+			"            // immediate: true"+
+			"        },"+
+			"        computed: {"+
+			"            // cplbIds: {"+
+			"            //     get() { },"+
+			"            //     set(val) { },"+
+			"            // },"+
+			"        },"+
+			"        methods: {"+
+			"            /** 查询list */"+
+			"            getList() {"+
+			"                this.loading = true;"+
+			"                this.loading = false;"+
+			"            },"+
+			"            /** 查看 */"+
+			"            handleView() {"+
+			""+
+			"            },"+
+			"            /** 添加 */"+
+			"            handleAdd() {"+
+			""+
+			"            },"+
+			"            /** 更新 */"+
+			"            handleUpdate() {"+
+			""+
+			"            },"+
+			"            /** 删除 */"+
+			"            handleDelete() {"+
+			""+
+			"            },"+
+			"            /** 查询 */"+
+			"            handleQuery() {"+
+			""+
+			"            },"+
+			"            /** 重置 */"+
+			"            resetQuery() {"+
+			""+
+			"            },"+
+			"            /** 多选框选中数据 */"+
+			"            handleSelectionChange(selection) {"+
+			"                this.ids = selection.map(item => item.eid);"+
+			"                this.single = selection.length !== 1;"+
+			"                this.multiple = !selection.length;"+
+			"                this.selects = selection;"+
+			"            },"+
+			"            /** 表单重置 */"+
+			"            reset() {"+
+			"                this.queryParams = {"+
+			"                    pageNum: 1,"+
+			"                    pageSize: 10,"+
+			"                };"+
+			"                this.resetForm(\"queryForm\");"+
+			"            },"+
+			"            /** 选择校验操作 **/"+
+			"            checkOption(row) {"+
+			"                return row.eid;"+
+			"            },"+
+			"        },"+
+			"    };"+
+			"</script>"+
+			"<style scoped lang=\"scss\">"+
+			"    .tableCss {"+
+			"        width: 99.9%;"+
+			"        overflow-x: auto !important;"+
+			"    }"+
+			""+
+			"    .tableCss .el-table__body-wrapper {"+
+			"        overflow-x: auto !important;"+
+			"    }"+
+			""+
+			"    .tableCss>>> ::-webkit-scrollbar {"+
+			"        width: 0.4rem;"+
+			"        height: 0.4rem;"+
+			"    }"+
+			""+
+			"    .tableCss>>> ::-webkit-scrollbar-thumb {"+
+			"        border-radius: 0.4rem;"+
+			"        background-color: #d4d4d4;"+
+			"    }"+
+			""+
+			"    .tableCss>>> ::-webkit-scrollbar-track {"+
+			"        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);"+
+			"        border-radius: 5px;"+
+			"        background: white;"+
+			"    }"+
+			""+
+			"    .list-move,"+
+			"    /* 对移动中的元素应用的过渡 */"+
+			"    .list-enter-active,"+
+			"    .list-leave-active {"+
+			"        transition: all 0.5s ease;"+
+			"    }"+
+			""+
+			"    .list-enter-from,"+
+			"    .list-leave-to {"+
+			"        opacity: 0;"+
+			"        transform: translateX(30px);"+
+			"    }"+
+			""+
+			"    /* 确保将离开的元素从布局流中删除"+
+			"  以便能够正确地计算移动的动画。 */"+
+			"    .list-leave-active {"+
+			"        position: absolute;"+
+			"    }"+
+			"<\/style>";
+console.log(template)
